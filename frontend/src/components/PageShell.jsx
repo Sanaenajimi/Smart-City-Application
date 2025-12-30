@@ -68,13 +68,6 @@ export default function PageShell({ children }) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="mt-4">
           <NavTabs />
-
-          {/* Small status badge (live/demo) */}
-          <div className="mt-3 flex items-center justify-end">
-            <div className={"px-3 py-1.5 rounded-full text-xs font-semibold " + toneClasses(tone)}>
-              AQI {aqi} • {aqiLabel(aqi).label} • {apiStatus === "live" ? "API connectée" : "Mode démo"}
-            </div>
-          </div>
         </div>
 
         <main className="mt-6">{children}</main>
