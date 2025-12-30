@@ -60,6 +60,8 @@ function createPollutionIcon(aqi) {
       padding: 4px 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       backdrop-filter: blur(10px);
+      width: fit-content;
+      white-space: nowrap;
     ">
       <div style="font-size: 16px; font-weight: 700; color: ${color}; line-height: 1;">
         ${aqi}
@@ -124,6 +126,8 @@ function createTrafficIcon(traffic) {
       display: flex;
       align-items: center;
       gap: 4px;
+      width: fit-content;
+      white-space: nowrap;
     ">
       <span style="font-size: 14px;">🚗</span>
       <span style="font-size: 13px; font-weight: 700; color: ${color};">
