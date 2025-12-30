@@ -47,36 +47,116 @@ function recommendationForAqi(aqi) {
   }
 }
 
-// Icône thermomètre SVG
-function createThermometerIcon(color, value) {
-  const svg = `
-    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="20" cy="20" r="18" fill="white" stroke="${color}" stroke-width="2"/>
-      <text x="20" y="25" font-size="16" font-weight="bold" text-anchor="middle" fill="${color}">${value}°</text>
-    </svg>
+// Icône pollution stylée
+function createPollutionIcon(aqi, zone) {
+  const color = colorForAqi(aqi)
+  const label = aqi <= 50 ? "BON" : aqi <= 100 ? "MODÉRÉ" : "ÉLEVÉ"
+  const bgColor = aqi <= 50 ? "#ecfdf5" : aqi <= 100 ? "#fffbeb" : "#fef2f2"
+  
+  const html = `
+    <div style="
+      background: ${bgColor};
+      border: 2px solid ${color};
+      border-radius: 12px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 80px;
+      backdrop-filter: blur(10px);
+    ">
+      <div style="font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 2px;">
+        ${zone}
+      </div>
+      <div style="font-size: 18px; font-weight: 700; color: ${color}; line-height: 1;">
+        ${aqi}
+      </div>
+      <div style="font-size: 9px; color: ${color}; font-weight: 600; margin-top: 2px;">
+        ${label}
+      </div>
+    </div>
   `
+  
   return L.divIcon({
-    html: svg,
+    html: html,
     className: '',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
+    iconSize: [80, 60],
+    iconAnchor: [40, 30],
   })
 }
 
-// Icône voiture SVG
-function createCarIcon(color, value) {
-  const svg = `
-    <svg width="40" height="40" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="20" cy="20" r="18" fill="white" stroke="${color}" stroke-width="2"/>
-      <text x="20" y="15" font-size="18" text-anchor="middle">🚗</text>
-      <text x="20" y="28" font-size="10" font-weight="bold" text-anchor="middle" fill="${color}">${value}</text>
-    </svg>
+// Icône météo stylée
+function createMeteoIcon(temp, humidity, wind, zone) {
+  const html = `
+    <div style="
+      background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+      border: 2px solid #0ea5e9;
+      border-radius: 12px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 90px;
+      backdrop-filter: blur(10px);
+    ">
+      <div style="font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">
+        ${zone}
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+        <span style="font-size: 20px;">🌡️</span>
+        <span style="font-size: 16px; font-weight: 700; color: #0369a1;">
+          ${temp}°C
+        </span>
+      </div>
+      <div style="display: flex; gap: 8px; font-size: 9px; color: #64748b;">
+        <span>💧 ${humidity}%</span>
+        <span>💨 ${wind}km/h</span>
+      </div>
+    </div>
   `
+  
   return L.divIcon({
-    html: svg,
+    html: html,
     className: '',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
+    iconSize: [90, 70],
+    iconAnchor: [45, 35],
+  })
+}
+
+// Icône trafic stylée
+function createTrafficIcon(traffic, zone) {
+  const isHigh = traffic > 100
+  const isMedium = traffic > 60 && traffic <= 100
+  const color = isHigh ? "#dc2626" : isMedium ? "#f59e0b" : "#10b981"
+  const bgColor = isHigh ? "#fef2f2" : isMedium ? "#fffbeb" : "#ecfdf5"
+  const status = isHigh ? "DENSE" : isMedium ? "FLUIDE" : "FAIBLE"
+  
+  const html = `
+    <div style="
+      background: ${bgColor};
+      border: 2px solid ${color};
+      border-radius: 12px;
+      padding: 8px 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      min-width: 85px;
+      backdrop-filter: blur(10px);
+    ">
+      <div style="font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 2px;">
+        ${zone}
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+        <span style="font-size: 18px;">🚗</span>
+        <span style="font-size: 16px; font-weight: 700; color: ${color};">
+          ${traffic}
+        </span>
+      </div>
+      <div style="font-size: 9px; color: ${color}; font-weight: 600;">
+        ${status}
+      </div>
+    </div>
+  `
+  
+  return L.divIcon({
+    html: html,
+    className: '',
+    iconSize: [85, 65],
+    iconAnchor: [42, 32],
   })
 }
 
@@ -256,11 +336,27 @@ export default function Carte() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
+                {layers.pollution && zonesWithAqi.map((z) => (
+                  <Marker 
+                    key={`pollution-${z.id}`}
+                    position={z.coords}
+                    icon={createPollutionIcon(z.aqi, z.label)}
+                    eventHandlers={{ click: () => setSelectedZone(z.id) }}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <div className="font-semibold">{z.label}</div>
+                        <div className="mt-1 text-gray-600">AQI : {z.aqi}</div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                ))}
+
                 {layers.meteo && zonesWithAqi.map((z) => (
                   <Marker 
                     key={`meteo-${z.id}`}
                     position={z.coords}
-                    icon={createThermometerIcon(colorForAqi(z.aqi), z.temperature)}
+                    icon={createMeteoIcon(z.temperature, z.humidity, z.wind, z.label)}
                     eventHandlers={{ click: () => setSelectedZone(z.id) }}
                   >
                     <Popup>
@@ -277,8 +373,8 @@ export default function Carte() {
                 {layers.trafic && zonesWithAqi.map((z) => (
                   <Marker 
                     key={`trafic-${z.id}`}
-                    position={[z.coords[0] + 0.01, z.coords[1]]}
-                    icon={createCarIcon(colorForAqi(z.aqi), z.traffic)}
+                    position={z.coords}
+                    icon={createTrafficIcon(z.traffic, z.label)}
                     eventHandlers={{ click: () => setSelectedZone(z.id) }}
                   >
                     <Popup>
