@@ -1,0 +1,63 @@
+services:
+  # Backend API (Flask)
+  - type: web
+    name: smart-city-backend
+    runtime: python
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: JWT_SECRET
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: STORE_PATH
+        value: /tmp/smartcity_store.json
+
+  # IoT simulator (background worker)
+  - type: worker
+    name: smart-city-iot-simulator
+    runtime: python
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python iot_simulator.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: API_BASE
+        fromService:
+          name: smart-city-backend
+          type: web
+          property: url
+      - key: INTERVAL
+        value: "900"
+
+cronJobs:
+  # Data collector (optional: uses AQICN_TOKEN / OPENWEATHER_KEY if set)
+  - name: smart-city-collecte
+    schedule: "*/15 * * * *"
+    runtime: python
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python collecte_job.py
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: API_BASE
+        fromService:
+          name: smart-city-backend
+          type: web
+          property: url
+      - key: AQICN_TOKEN
+        sync: false
+      - key: OPENWEATHER_KEY
+        sync: false
+      - key: CITY
+        value: "Marseille"
