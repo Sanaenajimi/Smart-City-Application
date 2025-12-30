@@ -21,14 +21,17 @@ const MODELS = [
   { id: "xgb", label: "XGBoost", baseConfidence: 82 },
 ]
 
-function buildPollutionSeries(base, hours, pollutantId) {
+function buildPollutionSeries(base, hours, pollutantId, modelId) {
   const now = new Date()
   const series = []
   const multiplier = pollutantId === "PM10" ? 1.5 : pollutantId === "NO2" ? 1.3 : pollutantId === "O3" ? 1.2 : pollutantId === "SO2" ? 0.8 : 1
   
+  // Variation selon le modèle (Random Forest vs XGBoost)
+  const modelVariation = modelId === "xgb" ? 0 : 3 // XGBoost plus précis, RF légèrement plus haut
+  
   for (let i = 0; i <= hours; i += 1) {
     const t = new Date(now.getTime() + i * 60 * 60 * 1000)
-    const v = Math.round((base * multiplier) + 6 * Math.sin(i / 3) + (i % 4 === 0 ? 2 : 0))
+    const v = Math.round((base * multiplier) + 6 * Math.sin(i / 3) + (i % 4 === 0 ? 2 : 0) + modelVariation)
     series.push({
       h: t.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
       value: Math.max(5, v),
@@ -37,18 +40,21 @@ function buildPollutionSeries(base, hours, pollutantId) {
   return series
 }
 
-function buildMeteoSeries(hours, type = "temperature") {
+function buildMeteoSeries(hours, modelId) {
   const now = new Date()
   const series = []
-  const baseTemp = 12
-  const baseHumidity = 75
-  const baseWind = 15
+  const baseTemp = 2 // Température réelle fin décembre Paris
+  const baseHumidity = 85
+  const baseWind = 12
+  
+  // Variation selon le modèle
+  const tempAdjust = modelId === "xgb" ? 0 : 0.5
   
   for (let i = 0; i <= hours; i += 1) {
     const t = new Date(now.getTime() + i * 60 * 60 * 1000)
     series.push({
       h: t.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-      temperature: baseTemp + Math.round(3 * Math.sin(i / 4)) + (Math.random() - 0.5) * 2,
+      temperature: Math.round(baseTemp + 3 * Math.sin(i / 4) + (Math.random() - 0.5) * 2 + tempAdjust),
       humidity: baseHumidity + Math.round(5 * Math.cos(i / 3)) + (Math.random() - 0.5) * 3,
       wind: baseWind + Math.round(4 * Math.sin(i / 5)) + (Math.random() - 0.5) * 2,
     })
@@ -56,10 +62,13 @@ function buildMeteoSeries(hours, type = "temperature") {
   return series
 }
 
-function buildTraficSeries(hours, zoneId) {
+function buildTraficSeries(hours, zoneId, modelId) {
   const now = new Date()
   const series = []
   const baseTraffic = zoneId === "industrie" ? 120 : zoneId === "centre" ? 85 : 45
+  
+  // Variation selon le modèle
+  const modelAdjust = modelId === "xgb" ? 0 : 5
   
   for (let i = 0; i <= hours; i += 1) {
     const t = new Date(now.getTime() + i * 60 * 60 * 1000)
@@ -69,7 +78,7 @@ function buildTraficSeries(hours, zoneId) {
     
     series.push({
       h: t.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-      value: Math.round(baseTraffic * peakMultiplier + (Math.random() - 0.5) * 15),
+      value: Math.round(baseTraffic * peakMultiplier + (Math.random() - 0.5) * 15 + modelAdjust),
     })
   }
   return series
@@ -113,13 +122,13 @@ export default function Predictions() {
   const series = useMemo(() => {
     if (predictionType === "pollution") {
       const base = zoneId === "industrie" ? 44 : zoneId === "centre" ? 36 : 28
-      return buildPollutionSeries(base, horizon, pollutantId)
+      return buildPollutionSeries(base, horizon, pollutantId, selectedModel)
     } else if (predictionType === "meteo") {
-      return buildMeteoSeries(horizon)
+      return buildMeteoSeries(horizon, selectedModel)
     } else {
-      return buildTraficSeries(horizon, zoneId)
+      return buildTraficSeries(horizon, zoneId, selectedModel)
     }
-  }, [zoneId, horizon, predictionType, pollutantId])
+  }, [zoneId, horizon, predictionType, pollutantId, selectedModel])
 
   const selectedPollutant = POLLUTANTS.find(p => p.id === pollutantId)
   const last = series[series.length - 1]

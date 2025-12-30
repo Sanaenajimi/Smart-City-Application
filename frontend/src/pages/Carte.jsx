@@ -82,15 +82,15 @@ function createMeteoIcon(temp, humidity, wind) {
       background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
       border: 2px solid #0ea5e9;
       border-radius: 8px;
-      padding: 6px 10px;
+      padding: 8px 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 6px;
     ">
-      <span style="font-size: 16px;">🌡️</span>
-      <span style="font-size: 14px; font-weight: 700; color: #0369a1;">
+      <span style="font-size: 18px;">🌡️</span>
+      <span style="font-size: 15px; font-weight: 700; color: #0369a1;">
         ${temp}°C
       </span>
     </div>
@@ -99,8 +99,8 @@ function createMeteoIcon(temp, humidity, wind) {
   return L.divIcon({
     html: html,
     className: '',
-    iconSize: [60, 32],
-    iconAnchor: [30, 16],
+    iconSize: [70, 36],
+    iconAnchor: [35, 18],
   })
 }
 
@@ -195,15 +195,24 @@ export default function Carte() {
   const [activeLayer, setActiveLayer] = useState("pollution") // Un seul layer actif
   const [selectedZone, setSelectedZone] = useState("centre")
   const [realData, setRealData] = useState(null)
+  const [weatherData, setWeatherData] = useState(null)
 
   // Récupération des données réelles depuis l'API
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Récupérer données air quality
         const response = await fetch('http://localhost:10000/api/sensors/latest')
         if (response.ok) {
           const data = await response.json()
           setRealData(data)
+        }
+        
+        // Récupérer données météo réelles
+        const weatherResponse = await fetch('http://localhost:10000/api/weather/current')
+        if (weatherResponse.ok) {
+          const weather = await weatherResponse.json()
+          setWeatherData(weather)
         }
       } catch (error) {
         console.log("Données API non disponibles, utilisation des données de simulation")
@@ -215,6 +224,11 @@ export default function Carte() {
   }, [])
 
   const zonesWithAqi = useMemo(() => {
+    // Température réelle du jour (ou simulation réaliste)
+    const currentTemp = weatherData?.temperature || 2 // 2°C pour fin décembre à Paris
+    const currentHumidity = weatherData?.humidity || 85
+    const currentWind = weatherData?.wind_speed || 12
+    
     if (realData && realData.length > 0) {
       // Utiliser les données réelles de l'API
       const zoneData = {}
@@ -222,9 +236,9 @@ export default function Carte() {
         if (!zoneData[sensor.zone_id]) {
           zoneData[sensor.zone_id] = {
             aqi: Math.round(sensor.pm25 * 2), // Approximation AQI
-            temperature: Math.round(Math.random() * 10 + 8), // Entre 8 et 18°C pour décembre à Paris
-            humidity: Math.round(Math.random() * 20 + 65), // Entre 65 et 85%
-            wind: Math.round(Math.random() * 15 + 5), // Entre 5 et 20 km/h
+            temperature: Math.round(currentTemp + (Math.random() - 0.5) * 2), // Variation ±1°C
+            humidity: Math.round(currentHumidity + (Math.random() - 0.5) * 5),
+            wind: Math.round(currentWind + (Math.random() - 0.5) * 4),
             traffic: sensor.zone_id === "industrie" ? 120 : sensor.zone_id === "centre" ? 85 : 45,
           }
         }
@@ -234,25 +248,25 @@ export default function Carte() {
         ...z,
         aqi: zoneData[z.id]?.aqi || 70,
         coords: ZONE_COORDS[z.id] || [48.8566, 2.3522],
-        temperature: zoneData[z.id]?.temperature || Math.round(Math.random() * 10 + 8),
-        humidity: zoneData[z.id]?.humidity || Math.round(Math.random() * 20 + 65),
-        wind: zoneData[z.id]?.wind || Math.round(Math.random() * 15 + 5),
+        temperature: zoneData[z.id]?.temperature || currentTemp,
+        humidity: zoneData[z.id]?.humidity || currentHumidity,
+        wind: zoneData[z.id]?.wind || currentWind,
         traffic: zoneData[z.id]?.traffic || 50,
       }))
     }
     
-    // Données simulées réalistes pour Paris en décembre
+    // Données simulées réalistes pour Paris fin décembre
     const base = { centre: 77, industrie: 92, nord: 61 }
     return ZONES.filter(z => z.id !== "all").map((z) => ({
       ...z,
       aqi: base[z.id] ?? 70,
       coords: ZONE_COORDS[z.id] ?? [48.8566, 2.3522],
-      temperature: z.id === "nord" ? 10 : 12, // Températures réalistes décembre Paris
-      humidity: z.id === "industrie" ? 72 : 78,
-      wind: z.id === "centre" ? 14 : 11,
+      temperature: Math.round(currentTemp + (Math.random() - 0.5) * 2), // 1-3°C
+      humidity: Math.round(currentHumidity + (Math.random() - 0.5) * 5),
+      wind: Math.round(currentWind + (Math.random() - 0.5) * 4),
       traffic: z.id === "industrie" ? 120 : z.id === "centre" ? 85 : 45,
     }))
-  }, [realData])
+  }, [realData, weatherData])
 
   const selected = zonesWithAqi.find((z) => z.id === selectedZone) ?? zonesWithAqi[0]
   const aqiInfo = aqiLabel(selected.aqi)
