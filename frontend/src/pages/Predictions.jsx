@@ -75,11 +75,32 @@ function buildTraficSeries(hours, zoneId) {
   return series
 }
 
-function confidenceForModel(modelId, zoneId) {
+function confidenceForModel(modelId, zoneId, pollutantId, predictionType) {
   const model = MODELS.find(m => m.id === modelId)
-  const baseConf = model?.baseConfidence || 75
+  let baseConf = model?.baseConfidence || 75
+  
+  // Ajustement selon le type de prédiction
+  if (predictionType === "pollution") {
+    // Ajustement selon le polluant
+    const pollutantAdjust = {
+      "PM25": 0,      // Référence
+      "PM10": -3,     // Un peu moins précis
+      "NO2": -5,      // Plus difficile à prédire
+      "O3": -7,       // Très variable selon météo
+      "SO2": -4,      // Moins de données historiques
+    }
+    baseConf += pollutantAdjust[pollutantId] || 0
+  } else if (predictionType === "meteo") {
+    baseConf += 5   // Météo généralement plus prévisible
+  } else if (predictionType === "trafic") {
+    baseConf -= 2   // Trafic plus aléatoire (événements imprévisibles)
+  }
+  
+  // Ajustement selon la zone
   const zoneAdjust = zoneId === "centre" ? 3 : zoneId === "industrie" ? -5 : 0
-  return Math.min(95, Math.max(60, baseConf + zoneAdjust))
+  baseConf += zoneAdjust
+  
+  return Math.min(95, Math.max(60, Math.round(baseConf)))
 }
 
 export default function Predictions() {
@@ -87,7 +108,7 @@ export default function Predictions() {
   const [horizon, setHorizon] = useState(24)
   const [predictionType, setPredictionType] = useState("pollution")
   const [pollutantId, setPollutantId] = useState("PM25")
-  const [selectedModel, setSelectedModel] = useState("xgb") // XGBoost par défaut car meilleure confiance
+  const [selectedModel, setSelectedModel] = useState("xgb") // Modèle sélectionnable par l'utilisateur
 
   const series = useMemo(() => {
     if (predictionType === "pollution") {
@@ -102,7 +123,7 @@ export default function Predictions() {
 
   const selectedPollutant = POLLUTANTS.find(p => p.id === pollutantId)
   const last = series[series.length - 1]
-  const conf = confidenceForModel(selectedModel, zoneId)
+  const conf = confidenceForModel(selectedModel, zoneId, pollutantId, predictionType)
   
   const lastValue = predictionType === "pollution" ? last?.value : 
                     predictionType === "meteo" ? last?.temperature :
@@ -145,9 +166,11 @@ export default function Predictions() {
     }
   }, [zoneId, predictionType])
 
-  // Calculer les prédictions du modèle alternatif
-  const alternativeModel = MODELS.find(m => m.id !== selectedModel)
-  const altConf = confidenceForModel(alternativeModel.id, zoneId)
+  // Calculer les prédictions de tous les modèles pour comparaison
+  const modelComparisons = MODELS.map(model => ({
+    ...model,
+    confidence: confidenceForModel(model.id, zoneId, pollutantId, predictionType)
+  })).sort((a, b) => b.confidence - a.confidence) // Trier par confiance décroissante
 
   return (
     <div className="space-y-5">
@@ -253,7 +276,7 @@ export default function Predictions() {
           <Metric 
             title="Modèle" 
             value={MODELS.find(m => m.id === selectedModel)?.label} 
-            hint="sélectionné automatiquement" 
+            hint="sélectionné manuellement" 
           />
         </div>
 
@@ -305,19 +328,18 @@ export default function Predictions() {
 
           <Panel title="Comparaison des modèles">
             <div className="space-y-3">
-              <ModelCard 
-                name={MODELS.find(m => m.id === selectedModel)?.label}
-                confidence={conf}
-                isSelected={true}
-              />
-              <ModelCard 
-                name={alternativeModel?.label}
-                confidence={altConf}
-                isSelected={false}
-              />
+              {modelComparisons.map((model) => (
+                <ModelCard 
+                  key={model.id}
+                  name={model.label}
+                  confidence={model.confidence}
+                  isSelected={selectedModel === model.id}
+                  onClick={() => setSelectedModel(model.id)}
+                />
+              ))}
             </div>
             <div className="mt-3 text-xs text-gray-500">
-              Le modèle avec la meilleure confiance est sélectionné automatiquement
+              Cliquez sur un modèle pour voir ses prédictions
             </div>
           </Panel>
         </div>
@@ -345,18 +367,25 @@ function Panel({ title, children }) {
   )
 }
 
-function ModelCard({ name, confidence, isSelected }) {
+function ModelCard({ name, confidence, isSelected, onClick }) {
   return (
-    <div className={`p-3 rounded-xl border ${isSelected ? 'border-gray-900 bg-gray-50' : 'border-gray-200'}`}>
+    <button
+      onClick={onClick}
+      className={`w-full p-3 rounded-xl border transition-all ${
+        isSelected 
+          ? 'border-gray-900 bg-gray-50 shadow-sm' 
+          : 'border-gray-200 hover:border-gray-400 hover:bg-gray-50'
+      }`}
+    >
       <div className="flex items-center justify-between">
-        <div className="font-medium text-sm">{name}</div>
+        <div className="font-medium text-sm text-left">{name}</div>
         <div className="text-xs px-2 py-1 rounded-lg bg-gray-100">
           {confidence}% confiance
         </div>
       </div>
       {isSelected && (
-        <div className="text-xs text-gray-500 mt-1">✓ Modèle actif</div>
+        <div className="text-xs text-gray-500 mt-1 text-left">✓ Modèle actif</div>
       )}
-    </div>
+    </button>
   )
 }

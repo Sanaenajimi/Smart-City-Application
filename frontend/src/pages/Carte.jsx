@@ -3,11 +3,11 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet"
 import { ZONES, aqiLabel, toneClasses } from "../lib/mockData.js"
 import L from "leaflet"
 
-// Coordonnées Paris au lieu de Marseille
+// Coordonnées Paris intra-muros
 const ZONE_COORDS = {
-  centre: [48.8566, 2.3522],
-  industrie: [48.8965, 2.4180],
-  nord: [48.9023, 2.3480],
+  centre: [48.8566, 2.3522],     // Centre de Paris (Notre-Dame)
+  industrie: [48.8738, 2.3364],  // 18e arrondissement (nord Paris)
+  nord: [48.8848, 2.3444],       // 19e arrondissement (Villette)
 }
 
 function colorForAqi(aqi) {
@@ -82,16 +82,16 @@ function createMeteoIcon(temp, humidity, wind) {
       background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
       border: 2px solid #0ea5e9;
       border-radius: 8px;
-      padding: 4px 8px;
+      padding: 6px 10px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       backdrop-filter: blur(10px);
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
     ">
-      <span style="font-size: 14px;">🌡️</span>
-      <span style="font-size: 13px; font-weight: 700; color: #0369a1;">
-        ${temp}°
+      <span style="font-size: 16px;">🌡️</span>
+      <span style="font-size: 14px; font-weight: 700; color: #0369a1;">
+        ${temp}°C
       </span>
     </div>
   `
@@ -99,8 +99,8 @@ function createMeteoIcon(temp, humidity, wind) {
   return L.divIcon({
     html: html,
     className: '',
-    iconSize: [50, 28],
-    iconAnchor: [25, 14],
+    iconSize: [60, 32],
+    iconAnchor: [30, 16],
   })
 }
 
@@ -311,6 +311,13 @@ export default function Carte() {
               type="button"
             >
               Tout afficher
+            </button>
+            <button
+              onClick={() => setActiveLayer(null)}
+              className="px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-gray-50"
+              type="button"
+            >
+              Tout masquer
             </button>
           </div>
 
