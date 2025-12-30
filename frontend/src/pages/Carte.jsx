@@ -47,30 +47,22 @@ function recommendationForAqi(aqi) {
   }
 }
 
-// Icône pollution stylée
-function createPollutionIcon(aqi, zone) {
+// Icône pollution compacte
+function createPollutionIcon(aqi) {
   const color = colorForAqi(aqi)
-  const label = aqi <= 50 ? "BON" : aqi <= 100 ? "MODÉRÉ" : "ÉLEVÉ"
   const bgColor = aqi <= 50 ? "#ecfdf5" : aqi <= 100 ? "#fffbeb" : "#fef2f2"
   
   const html = `
     <div style="
       background: ${bgColor};
       border: 2px solid ${color};
-      border-radius: 12px;
-      padding: 8px 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      min-width: 80px;
+      border-radius: 8px;
+      padding: 4px 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       backdrop-filter: blur(10px);
     ">
-      <div style="font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 2px;">
-        ${zone}
-      </div>
-      <div style="font-size: 18px; font-weight: 700; color: ${color}; line-height: 1;">
+      <div style="font-size: 16px; font-weight: 700; color: ${color}; line-height: 1;">
         ${aqi}
-      </div>
-      <div style="font-size: 9px; color: ${color}; font-weight: 600; margin-top: 2px;">
-        ${label}
       </div>
     </div>
   `
@@ -78,76 +70,99 @@ function createPollutionIcon(aqi, zone) {
   return L.divIcon({
     html: html,
     className: '',
-    iconSize: [80, 60],
-    iconAnchor: [40, 30],
+    iconSize: [35, 28],
+    iconAnchor: [17, 14],
   })
 }
 
-// Icône météo stylée
-function createMeteoIcon(temp, humidity, wind, zone) {
+// Icône météo compacte
+function createMeteoIcon(temp, humidity, wind) {
   const html = `
     <div style="
       background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
       border: 2px solid #0ea5e9;
-      border-radius: 12px;
-      padding: 8px 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      min-width: 90px;
+      border-radius: 8px;
+      padding: 4px 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 4px;
     ">
-      <div style="font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 4px;">
-        ${zone}
-      </div>
-      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
-        <span style="font-size: 20px;">🌡️</span>
-        <span style="font-size: 16px; font-weight: 700; color: #0369a1;">
-          ${temp}°C
-        </span>
-      </div>
-      <div style="display: flex; gap: 8px; font-size: 9px; color: #64748b;">
-        <span>💧 ${humidity}%</span>
-        <span>💨 ${wind}km/h</span>
-      </div>
+      <span style="font-size: 14px;">🌡️</span>
+      <span style="font-size: 13px; font-weight: 700; color: #0369a1;">
+        ${temp}°
+      </span>
     </div>
   `
   
   return L.divIcon({
     html: html,
     className: '',
-    iconSize: [90, 70],
-    iconAnchor: [45, 35],
+    iconSize: [50, 28],
+    iconAnchor: [25, 14],
   })
 }
 
-// Icône trafic stylée
-function createTrafficIcon(traffic, zone) {
+// Icône trafic compacte
+function createTrafficIcon(traffic) {
   const isHigh = traffic > 100
   const isMedium = traffic > 60 && traffic <= 100
   const color = isHigh ? "#dc2626" : isMedium ? "#f59e0b" : "#10b981"
   const bgColor = isHigh ? "#fef2f2" : isMedium ? "#fffbeb" : "#ecfdf5"
-  const status = isHigh ? "DENSE" : isMedium ? "FLUIDE" : "FAIBLE"
   
   const html = `
     <div style="
       background: ${bgColor};
       border: 2px solid ${color};
-      border-radius: 12px;
-      padding: 8px 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      min-width: 85px;
+      border-radius: 8px;
+      padding: 4px 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       backdrop-filter: blur(10px);
+      display: flex;
+      align-items: center;
+      gap: 4px;
     ">
-      <div style="font-size: 10px; color: #6b7280; font-weight: 600; margin-bottom: 2px;">
-        ${zone}
+      <span style="font-size: 14px;">🚗</span>
+      <span style="font-size: 13px; font-weight: 700; color: ${color};">
+        ${traffic}
+      </span>
+    </div>
+  `
+  
+  return L.divIcon({
+    html: html,
+    className: '',
+    iconSize: [55, 28],
+    iconAnchor: [27, 14],
+  })
+}
+
+// Icône combinée pour afficher tout
+function createCombinedIcon(aqi, temp, humidity, wind, traffic) {
+  const aqiColor = colorForAqi(aqi)
+  const trafficColor = traffic > 100 ? "#dc2626" : traffic > 60 ? "#f59e0b" : "#10b981"
+  
+  const html = `
+    <div style="
+      background: white;
+      border: 2px solid #6b7280;
+      border-radius: 10px;
+      padding: 6px 10px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+      backdrop-filter: blur(10px);
+      min-width: 110px;
+    ">
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+        <span style="font-size: 12px; font-weight: 700; color: ${aqiColor};">AQI ${aqi}</span>
       </div>
-      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
-        <span style="font-size: 18px;">🚗</span>
-        <span style="font-size: 16px; font-weight: 700; color: ${color};">
-          ${traffic}
-        </span>
+      <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 3px;">
+        <span style="font-size: 12px;">🌡️</span>
+        <span style="font-size: 11px; font-weight: 600; color: #0369a1;">${temp}°C</span>
       </div>
-      <div style="font-size: 9px; color: ${color}; font-weight: 600;">
-        ${status}
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span style="font-size: 12px;">🚗</span>
+        <span style="font-size: 11px; font-weight: 600; color: ${trafficColor};">${traffic}</span>
       </div>
     </div>
   `
@@ -155,8 +170,8 @@ function createTrafficIcon(traffic, zone) {
   return L.divIcon({
     html: html,
     className: '',
-    iconSize: [85, 65],
-    iconAnchor: [42, 32],
+    iconSize: [110, 75],
+    iconAnchor: [55, 37],
   })
 }
 
@@ -177,11 +192,7 @@ function Chip({ active, children, onClick }) {
 }
 
 export default function Carte() {
-  const [layers, setLayers] = useState({
-    pollution: true,
-    meteo: false,
-    trafic: false,
-  })
+  const [activeLayer, setActiveLayer] = useState("pollution") // Un seul layer actif
   const [selectedZone, setSelectedZone] = useState("centre")
   const [realData, setRealData] = useState(null)
 
@@ -278,31 +289,28 @@ export default function Carte() {
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Chip active={layers.pollution} onClick={() => toggle("pollution")}>
+            <Chip active={activeLayer === "pollution"} onClick={() => setActiveLayer("pollution")}>
               Pollution
             </Chip>
-            <Chip active={layers.meteo} onClick={() => toggle("meteo")}>
+            <Chip active={activeLayer === "meteo"} onClick={() => setActiveLayer("meteo")}>
               Météo
             </Chip>
-            <Chip active={layers.trafic} onClick={() => toggle("trafic")}>
+            <Chip active={activeLayer === "trafic"} onClick={() => setActiveLayer("trafic")}>
               Trafic
             </Chip>
 
             <div className="mx-1 h-6 w-px bg-gray-200 hidden sm:block" />
 
             <button
-              onClick={() => setAll(true)}
-              className="px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-gray-50"
+              onClick={() => setActiveLayer("all")}
+              className={`px-3 py-2 rounded-xl text-sm transition ${
+                activeLayer === "all" 
+                  ? "bg-gray-900 text-white" 
+                  : "text-gray-700 hover:bg-gray-50"
+              }`}
               type="button"
             >
               Tout afficher
-            </button>
-            <button
-              onClick={() => setAll(false)}
-              className="px-3 py-2 rounded-xl text-sm text-gray-700 hover:bg-gray-50"
-              type="button"
-            >
-              Tout masquer
             </button>
           </div>
 
@@ -336,55 +344,76 @@ export default function Carte() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                {layers.pollution && zonesWithAqi.map((z) => (
+                {/* Affichage conditionnel selon le layer actif et la zone sélectionnée */}
+                {activeLayer === "pollution" && (
                   <Marker 
-                    key={`pollution-${z.id}`}
-                    position={z.coords}
-                    icon={createPollutionIcon(z.aqi, z.label)}
-                    eventHandlers={{ click: () => setSelectedZone(z.id) }}
+                    key={`pollution-${selected.id}`}
+                    position={selected.coords}
+                    icon={createPollutionIcon(selected.aqi)}
+                    eventHandlers={{ click: () => setSelectedZone(selected.id) }}
                   >
                     <Popup>
                       <div className="text-sm">
-                        <div className="font-semibold">{z.label}</div>
-                        <div className="mt-1 text-gray-600">AQI : {z.aqi}</div>
+                        <div className="font-semibold">{selected.label}</div>
+                        <div className="mt-1 text-gray-600">AQI : {selected.aqi}</div>
                       </div>
                     </Popup>
                   </Marker>
-                ))}
+                )}
 
-                {layers.meteo && zonesWithAqi.map((z) => (
+                {activeLayer === "meteo" && (
                   <Marker 
-                    key={`meteo-${z.id}`}
-                    position={z.coords}
-                    icon={createMeteoIcon(z.temperature, z.humidity, z.wind, z.label)}
-                    eventHandlers={{ click: () => setSelectedZone(z.id) }}
+                    key={`meteo-${selected.id}`}
+                    position={selected.coords}
+                    icon={createMeteoIcon(selected.temperature, selected.humidity, selected.wind)}
+                    eventHandlers={{ click: () => setSelectedZone(selected.id) }}
                   >
                     <Popup>
                       <div className="text-sm">
-                        <div className="font-semibold">{z.label}</div>
-                        <div className="mt-1 text-gray-600">Température : {z.temperature}°C</div>
-                        <div className="text-gray-600">Humidité : {z.humidity}%</div>
-                        <div className="text-gray-600">Vent : {z.wind} km/h</div>
+                        <div className="font-semibold">{selected.label}</div>
+                        <div className="mt-1 text-gray-600">Température : {selected.temperature}°C</div>
+                        <div className="text-gray-600">Humidité : {selected.humidity}%</div>
+                        <div className="text-gray-600">Vent : {selected.wind} km/h</div>
                       </div>
                     </Popup>
                   </Marker>
-                ))}
+                )}
 
-                {layers.trafic && zonesWithAqi.map((z) => (
+                {activeLayer === "trafic" && (
                   <Marker 
-                    key={`trafic-${z.id}`}
-                    position={z.coords}
-                    icon={createTrafficIcon(z.traffic, z.label)}
-                    eventHandlers={{ click: () => setSelectedZone(z.id) }}
+                    key={`trafic-${selected.id}`}
+                    position={selected.coords}
+                    icon={createTrafficIcon(selected.traffic)}
+                    eventHandlers={{ click: () => setSelectedZone(selected.id) }}
                   >
                     <Popup>
                       <div className="text-sm">
-                        <div className="font-semibold">{z.label}</div>
-                        <div className="mt-1 text-gray-600">Trafic : {z.traffic} véh/h</div>
+                        <div className="font-semibold">{selected.label}</div>
+                        <div className="mt-1 text-gray-600">Trafic : {selected.traffic} véh/h</div>
                       </div>
                     </Popup>
                   </Marker>
-                ))}
+                )}
+
+                {activeLayer === "all" && (
+                  <Marker 
+                    key={`all-${selected.id}`}
+                    position={selected.coords}
+                    icon={createCombinedIcon(selected.aqi, selected.temperature, selected.humidity, selected.wind, selected.traffic)}
+                    eventHandlers={{ click: () => setSelectedZone(selected.id) }}
+                  >
+                    <Popup>
+                      <div className="text-sm">
+                        <div className="font-semibold">{selected.label}</div>
+                        <div className="mt-1 text-gray-600">AQI : {selected.aqi}</div>
+                        <div className="text-gray-600">Température : {selected.temperature}°C</div>
+                        <div className="text-gray-600">Humidité : {selected.humidity}%</div>
+                        <div className="text-gray-600">Vent : {selected.wind} km/h</div>
+                        <div className="text-gray-600">Trafic : {selected.traffic} véh/h</div>
+                      </div>
+                    </Popup>
+                  </Marker>
+                )}
               </MapContainer>
             </div>
           </div>
