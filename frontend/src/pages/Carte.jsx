@@ -88,6 +88,8 @@ function createMeteoIcon(temp, humidity, wind) {
       display: flex;
       align-items: center;
       gap: 6px;
+      width: fit-content;
+      white-space: nowrap;
     ">
       <span style="font-size: 18px;">🌡️</span>
       <span style="font-size: 15px; font-weight: 700; color: #0369a1;">
